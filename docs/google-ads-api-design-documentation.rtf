@@ -1,0 +1,60 @@
+{\rtf1\ansi\deff0
+{\fonttbl{\f0 Calibri;}}
+\fs36\b Nexus AI - Google Ads API Design Documentation\b0\par
+\fs22\i Purpose: Developer token access review for a first-party reporting and campaign analytics tool.\i0\par
+\par
+\fs28\b 1. Company and Business Model\b0\par
+\fs22 Nexus AI is an internal agency operations tool used by Prymeira Digital to manage paid-media reporting for client advertising accounts. The company provides digital marketing and performance reporting services to business clients. The tool is not an ad network, data broker, lead reseller, or public self-serve advertising platform.\par
+Google Ads data is used to help authorized agency staff review campaign performance, generate client-ready reports, and export summaries for account management workflows.\par
+\par
+\fs28\b 2. Users and Access\b0\par
+\fs22 Primary users: Internal employees and authorized contractors of the agency who manage reporting for client ad accounts.\par
+External access: Clients may receive generated reports or exported PDFs/messages, but they do not directly operate the Google Ads API integration in the current implementation.\par
+Authentication: Users sign in through Supabase Auth. API calls to Edge Functions require an authenticated session, except OAuth callback endpoints.\par
+Authorization: Google Ads access is granted by the Google account owner through OAuth consent. Tokens are stored server-side and are not exposed to the browser.\par
+\par
+\fs28\b 3. Google Ads API Usage\b0\par
+\fs22 - List accessible Google Ads customer accounts after the user completes OAuth.\par
+- Read customer and campaign metadata, including account ID, campaign ID, name, status, currency, and timezone.\par
+- Read reporting metrics such as cost, impressions, clicks, CTR, CPC, CPM, conversions, conversion value, and ROAS.\par
+- Generate dashboards, charts, report previews, PDF exports, and WhatsApp-ready summaries for agency reporting workflows.\par
+- The application does not create, mutate, pause, delete, or optimize campaigns through the API at this stage.\par
+\par
+\fs28\b 4. Architecture Overview\b0\par
+\fs22 Frontend: React/Vite application running the Nexus AI dashboard and report preview views.\par
+Backend: Supabase Edge Functions for Google OAuth, account sync, campaign sync, and insights retrieval.\par
+Database: Supabase Postgres tables store users, connections, ad platform accounts, campaigns, and insight snapshots.\par
+OAuth: The app redirects users to Google OAuth with the Google Ads scope. The callback stores tokens server-side through Supabase.\par
+Google Ads calls: Edge Functions call Google Ads API endpoints from the server, using the configured developer token and OAuth access token.\par
+\par
+\fs28\b 5. Data Flow\b0\par
+\fs22 1. An authenticated agency user clicks Connect Google in Nexus AI.\par
+2. The app requests a Google OAuth URL from the Supabase Edge Function.\par
+3. The user grants Google Ads access through Google's OAuth consent screen.\par
+4. The OAuth callback stores the refresh token and access token in Supabase for that user connection.\par
+5. The dashboard requests accounts and metrics through authenticated Edge Functions.\par
+6. The Edge Functions call Google Ads API and return normalized reporting data to the frontend.\par
+7. Reports are rendered in the dashboard and can be exported for client communication.\par
+\par
+\fs28\b 6. Security and Data Handling\b0\par
+\fs22 - OAuth refresh tokens and access tokens are stored only in Supabase and are accessed by server-side Edge Functions.\par
+- The browser never receives Google refresh tokens, developer tokens, client secrets, or service role keys.\par
+- Supabase Row Level Security policies restrict user access to their own records.\par
+- The integration uses read-oriented reporting scopes and does not sell, share, or transfer Google Ads data to unrelated third parties.\par
+- Data is used only for account reporting, analytics review, and client communication by the authorized agency team.\par
+\par
+\fs28\b 7. Screens and User Workflow\b0\par
+\fs22 The primary screens are: login/register, agency dashboard, account portfolio, Google connection action, report preview, campaign charts, settings, and PDF export. The user workflow is intentionally simple: authenticate, connect Google Ads, select an account, choose a reporting period, review metrics, and export/send a report.\par
+\par
+\fs28\b 8. Compliance Notes\b0\par
+\fs22 - The tool is first-party/custom software for the agency's own reporting workflow.\par
+- The current implementation is not intended for App Conversion Tracking and Remarketing API use.\par
+- The current implementation is not a third-party platform embedded into another product.\par
+- The current Google Ads API use case is reporting/analytics, not campaign mutation or automated bidding.\par
+\par
+\fs28\b 9. Contact and Ownership\b0\par
+\fs22 Product: Nexus AI.\par
+Organization: Prymeira Digital.\par
+Use case: Internal agency reporting and analytics for authorized Google Ads accounts.\par
+Review request: Basic access to read Google Ads reporting data for real client accounts with user-granted OAuth consent.\par
+}
