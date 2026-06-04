@@ -27,7 +27,9 @@ services:
         condition: on-failure
 
   nexus_app:
-    image: ghcr.io/yohannreimer/nexus:latest
+    # Portainer/Swarm may reuse :latest on stack updates. Pin an immutable
+    # GHCR commit tag here to force a real service update when this changes.
+    image: ghcr.io/yohannreimer/nexus:7df37aabf143e2ec055df8761a79f43eff29597c
     networks:
       - network_swarm_public
       - nexus_internal
@@ -87,7 +89,7 @@ services:
       labels:
         - traefik.enable=true
         - traefik.docker.network=network_swarm_public
-        - traefik.http.routers.nexus.rule=Host(`nexus.yrdnegocios.com.br`)
+        - traefik.http.routers.nexus.rule=Host(`nexus.prymeiradigital.com.br`)
         - traefik.http.routers.nexus.entrypoints=websecure
         - traefik.http.routers.nexus.tls.certresolver=letsencryptresolver
         - traefik.http.routers.nexus.service=nexus
