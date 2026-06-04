@@ -1,5 +1,6 @@
 import React from 'react';
 import { BarChart3, CheckCircle2 } from 'lucide-react';
+import { getPublicEnv } from '../services/publicEnv';
 
 interface LoginProps {
   // A prop onLogin não é mais necessária, pois o fluxo é gerenciado pelo redirecionamento
@@ -8,8 +9,8 @@ interface LoginProps {
 export const Login: React.FC<LoginProps> = () => {
 
   const handleFacebookLogin = () => {
-    const appId = import.meta.env.VITE_FACEBOOK_APP_ID;
-    const redirectUri = import.meta.env.VITE_FACEBOOK_REDIRECT_URI;
+    const appId = getPublicEnv('VITE_FACEBOOK_APP_ID');
+    const redirectUri = getPublicEnv('VITE_FACEBOOK_REDIRECT_URI');
     const scope = 'ads_read,read_insights';
     
     if (!appId || !redirectUri) {

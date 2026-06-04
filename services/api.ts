@@ -1,10 +1,11 @@
 import { AdAccount, FacebookCampaign } from '../types';
 import { isSupabaseConfigured, supabase } from './supabase';
 import * as edgeFunctions from './edgeFunctions';
+import { getPublicEnv } from './publicEnv';
 
 // CONFIGURAÇÃO
-const FB_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID || 'SEU_APP_ID_AQUI';
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const FB_APP_ID = getPublicEnv('VITE_FACEBOOK_APP_ID') || 'SEU_APP_ID_AQUI';
+const SUPABASE_URL = getPublicEnv('VITE_SUPABASE_URL');
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 

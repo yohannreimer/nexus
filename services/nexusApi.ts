@@ -1,6 +1,7 @@
 import type { AdPlatform, PlatformAccount, PlatformCampaign, PlatformInsightsResponse } from './platformTypes';
+import { getPublicEnv } from './publicEnv';
 
-const API_BASE_URL = (import.meta.env.VITE_NEXUS_API_URL as string | undefined) || '';
+const API_BASE_URL = getPublicEnv('VITE_NEXUS_API_URL');
 
 export type NexusApiTokenProvider = () => Promise<string | null>;
 

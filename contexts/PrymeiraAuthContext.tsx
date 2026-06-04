@@ -10,6 +10,7 @@ import {
   type PrymeiraAccessDecision,
   type PrymeiraWorkspaceContext,
 } from '../services/prymeiraAccount';
+import { getPublicEnv } from '../services/publicEnv';
 
 type PrymeiraAuthValue = {
   user: PrymeiraWorkspaceContext | null;
@@ -29,11 +30,10 @@ type PrymeiraAccessState = {
 
 const PrymeiraAuthContext = createContext<PrymeiraAuthValue | undefined>(undefined);
 
-const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string | undefined;
-const accountApiUrl = import.meta.env.VITE_PRYMEIRA_ACCOUNT_API_URL as string | undefined;
-const hubUrl =
-  (import.meta.env.VITE_PRYMEIRA_HUB_URL as string | undefined) || 'https://app.prymeiradigital.com.br';
-const productKey = (import.meta.env.VITE_PRYMEIRA_PRODUCT_KEY as string | undefined) || 'ads';
+const clerkKey = getPublicEnv('VITE_CLERK_PUBLISHABLE_KEY');
+const accountApiUrl = getPublicEnv('VITE_PRYMEIRA_ACCOUNT_API_URL');
+const hubUrl = getPublicEnv('VITE_PRYMEIRA_HUB_URL') || 'https://app.prymeiradigital.com.br';
+const productKey = getPublicEnv('VITE_PRYMEIRA_PRODUCT_KEY') || 'ads';
 
 function isPublicPortalPath() {
   if (typeof window === 'undefined') {

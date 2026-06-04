@@ -13,8 +13,9 @@ import type {
   PlatformInsight,
   PlatformInsightsResponse,
 } from './platformTypes';
+import { getPublicEnv, isPublicEnvEnabled } from './publicEnv';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_URL = getPublicEnv('VITE_SUPABASE_URL');
 
 type CallOptions = {
   method?: 'GET' | 'POST';
@@ -50,7 +51,7 @@ async function callPlatformFunction<T>(functionName: string, options: CallOption
 }
 
 export async function getPlatformLoginUrl(platform: AdPlatform): Promise<{ loginUrl: string }> {
-  if (import.meta.env.VITE_PRYMEIRA_AUTH_ENABLED === 'true') {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
     const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
     return getWorkspacePlatformLoginUrl(platform, redirectTo);
   }
@@ -73,7 +74,7 @@ export async function getPlatformLoginUrl(platform: AdPlatform): Promise<{ login
 }
 
 export async function fetchPlatformAccounts(platform?: AdPlatform): Promise<PlatformAccount[]> {
-  if (import.meta.env.VITE_PRYMEIRA_AUTH_ENABLED === 'true') {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
     const accounts = await fetchWorkspacePlatformAccounts();
     return platform ? accounts.filter((account) => account.platform === platform) : accounts;
   }
@@ -100,7 +101,7 @@ export async function fetchPlatformAccounts(platform?: AdPlatform): Promise<Plat
 }
 
 export async function fetchPlatformCampaigns(platform: AdPlatform, accountId: string): Promise<PlatformCampaign[]> {
-  if (import.meta.env.VITE_PRYMEIRA_AUTH_ENABLED === 'true') {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
     return fetchWorkspacePlatformCampaigns(platform, accountId);
   }
 
@@ -144,7 +145,7 @@ export async function fetchPlatformInsights(
     dateEnd?: string;
   } = {},
 ): Promise<PlatformInsightsResponse> {
-  if (import.meta.env.VITE_PRYMEIRA_AUTH_ENABLED === 'true') {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
     return fetchWorkspacePlatformInsights(platform, accountId, options);
   }
 

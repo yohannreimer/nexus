@@ -3,6 +3,7 @@ import { X, Facebook, Check, Lock, AlertTriangle, Smartphone, Target, ChevronRig
 import { Button } from './Button';
 import * as api from '../services/api';
 import { AdAccount, FacebookCampaign } from '../types';
+import { getPublicEnv } from '../services/publicEnv';
 
 interface ConnectModalProps {
   isOpen: boolean;
@@ -53,8 +54,8 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({ isOpen, onClose, onS
   const handleConnectClick = () => {
     setError(null);
     setStep('oauth_wait');
-    const APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID;
-    const REDIRECT_URI = import.meta.env.VITE_FACEBOOK_REDIRECT_URI;
+    const APP_ID = getPublicEnv('VITE_FACEBOOK_APP_ID');
+    const REDIRECT_URI = getPublicEnv('VITE_FACEBOOK_REDIRECT_URI');
     const authUrl = `https://www.facebook.com/v23.0/dialog/oauth?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=ads_read,read_insights&response_type=code`;
     const w = 600, h = 700;
     window.open(authUrl, 'facebook_oauth', `width=${w},height=${h},top=${(window.innerHeight - h) / 2},left=${(window.innerWidth - w) / 2}`);

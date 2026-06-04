@@ -38,17 +38,3 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
-          build-args: |
-            VITE_APP_URL=${{ vars.VITE_APP_URL || 'https://nexus.yrdnegocios.com.br' }}
-            VITE_NEXUS_API_URL=${{ vars.VITE_NEXUS_API_URL || vars.VITE_APP_URL || 'https://nexus.yrdnegocios.com.br' }}
-            VITE_CLERK_PUBLISHABLE_KEY=${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}
-            VITE_PRYMEIRA_ACCOUNT_API_URL=${{ vars.VITE_PRYMEIRA_ACCOUNT_API_URL }}
-            VITE_PRYMEIRA_HUB_URL=${{ vars.VITE_PRYMEIRA_HUB_URL || 'https://app.prymeiradigital.com.br' }}
-            VITE_PRYMEIRA_PRODUCT_KEY=${{ vars.VITE_PRYMEIRA_PRODUCT_KEY || 'ads' }}
-            VITE_PRYMEIRA_AUTH_ENABLED=${{ vars.VITE_PRYMEIRA_AUTH_ENABLED || 'true' }}
-            VITE_FACEBOOK_APP_ID=${{ vars.VITE_FACEBOOK_APP_ID }}
-            VITE_FACEBOOK_REDIRECT_URI=${{ vars.VITE_FACEBOOK_REDIRECT_URI || 'https://nexus.yrdnegocios.com.br/api/auth-callback' }}
-            VITE_N8N_WEBHOOK_URL=${{ vars.VITE_N8N_WEBHOOK_URL }}
-            VITE_SUPABASE_URL=${{ vars.VITE_SUPABASE_URL }}
-            VITE_SUPABASE_ANON_KEY=${{ vars.VITE_SUPABASE_ANON_KEY }}
-            VITE_DEV_BYPASS=${{ vars.VITE_DEV_BYPASS || 'false' }}

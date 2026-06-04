@@ -4,10 +4,11 @@
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { getPublicEnv } from './publicEnv';
 
 // Configuração do Supabase - usar variáveis de ambiente
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const supabaseUrl = getPublicEnv('VITE_SUPABASE_URL');
+const supabaseAnonKey = getPublicEnv('VITE_SUPABASE_ANON_KEY');
 
 // Só cria o cliente se as variáveis estiverem configuradas
 let supabase: SupabaseClient | null = null;

@@ -2,6 +2,7 @@
  * n8n Integration Service
  * Envia dados para webhooks do n8n (Evolution API WhatsApp)
  */
+import { getPublicEnv } from './publicEnv';
 
 interface WhatsAppMessage {
   number: string; // Ex: 5511999999999
@@ -21,7 +22,7 @@ export class N8nService {
 
   constructor(webhookUrl?: string) {
     // URL do webhook n8n (pode vir do .env ou ser passada)
-    this.webhookUrl = webhookUrl || import.meta.env.VITE_N8N_WEBHOOK_URL || '';
+    this.webhookUrl = webhookUrl || getPublicEnv('VITE_N8N_WEBHOOK_URL') || '';
   }
 
   /**

@@ -8,6 +8,7 @@ import { PDFGeneratorService } from '../services/pdfGeneratorService';
 import type { AdPlatform } from '../types';
 import { buildClientAnalysisModel } from '../services/clientAnalysisModel';
 import { buildDeterministicReport } from '../services/deterministicReport';
+import { isPublicEnvEnabled } from '../services/publicEnv';
 
 interface ReportPreviewProps {
   client: { companyName: string; adAccountId: string; platform?: AdPlatform };
@@ -79,7 +80,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
     try {
       if (period === 'custom' && (!customStartDate || !customEndDate)) throw new Error('Selecione as datas inicial e final');
 
-      if (import.meta.env.VITE_DEV_BYPASS === 'true') {
+      if (isPublicEnvEnabled('VITE_DEV_BYPASS')) {
         await new Promise(r => setTimeout(r, 700));
         const periodLabel = PERIOD_LABELS[period] || period;
         const mockCampaigns = [

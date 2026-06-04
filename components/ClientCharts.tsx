@@ -11,6 +11,7 @@ import {
 } from '@phosphor-icons/react';
 import type { AdPlatform, PlatformInsight } from '../types';
 import { buildClientAnalysisModel } from '../services/clientAnalysisModel';
+import { isPublicEnvEnabled } from '../services/publicEnv';
 
 interface ClientChartsProps {
   client: { id: string; name: string; platform?: AdPlatform };
@@ -79,7 +80,7 @@ export const ClientCharts: React.FC<ClientChartsProps> = ({
   const fetchChartData = async () => {
     setLoading(true); setError(null);
     try {
-      if (import.meta.env.VITE_DEV_BYPASS === 'true') {
+      if (isPublicEnvEnabled('VITE_DEV_BYPASS')) {
         await new Promise(r => setTimeout(r, 600));
         const days = period === 'today' || period === 'yesterday' ? 1 : period === 'last7days' ? 7 : period === 'last60days' ? 60 : 30;
         const mockDaily: DailyData[] = Array.from({ length: days }, (_, i) => {

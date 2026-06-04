@@ -1,28 +1,12 @@
 # Deploy no Portainer com Traefik e GHCR
 
-Este projeto publica a imagem Docker em `ghcr.io/yohannreimer/nexus:latest` pelo GitHub Actions.
+Este projeto publica uma imagem Docker generica em `ghcr.io/yohannreimer/nexus:latest` pelo GitHub Actions. Todas as variaveis ficam no Portainer.
 
-## 1. Variaveis do GitHub Actions
+## 1. GitHub Actions
 
-Como o frontend usa Vite, as variaveis `VITE_*` entram no build da imagem. Cadastre estas variaveis no GitHub em `Settings > Secrets and variables > Actions > Variables` antes de rodar o workflow `Publish GHCR image`.
+O GitHub Actions so faz build e publish da imagem. Nao cadastre envs do app no GitHub.
 
-```env
-VITE_APP_URL=https://nexus.yrdnegocios.com.br
-VITE_NEXUS_API_URL=https://nexus.yrdnegocios.com.br
-VITE_CLERK_PUBLISHABLE_KEY=pk_live_...
-VITE_PRYMEIRA_ACCOUNT_API_URL=https://URL-DO-PRYMEIRA-ACCOUNT
-VITE_PRYMEIRA_HUB_URL=https://app.prymeiradigital.com.br
-VITE_PRYMEIRA_PRODUCT_KEY=ads
-VITE_PRYMEIRA_AUTH_ENABLED=true
-VITE_FACEBOOK_APP_ID=seu_facebook_app_id
-VITE_FACEBOOK_REDIRECT_URI=https://nexus.yrdnegocios.com.br/api/auth-callback
-VITE_N8N_WEBHOOK_URL=https://webhooks.yrdnegocios.com.br/webhook/nexusrelatorios
-VITE_SUPABASE_URL=
-VITE_SUPABASE_ANON_KEY=
-VITE_DEV_BYPASS=false
-```
-
-Depois de alterar qualquer variavel `VITE_*`, rode o workflow novamente para reconstruir a imagem.
+As variaveis publicas do frontend (`VITE_*`) sao escritas em `dist/env.js` quando o container inicia, usando as envs cadastradas na stack do Portainer.
 
 ## 2. Stack do Portainer
 

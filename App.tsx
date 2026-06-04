@@ -60,6 +60,7 @@ import {
   mapPlatformAccountToAdAccount,
 } from './services/adAccountAdapters';
 import { runScheduledReportsNow } from './services/edgeFunctions';
+import { isPublicEnvEnabled } from './services/publicEnv';
 
 type ViewType =
   | 'CLIENTS'
@@ -74,7 +75,7 @@ type ViewType =
   | 'SETTINGS'
   | 'SUPABASE_SETUP';
 
-const DEV_BYPASS = import.meta.env.VITE_DEV_BYPASS === 'true';
+const DEV_BYPASS = isPublicEnvEnabled('VITE_DEV_BYPASS');
 
 function decodeOAuthPayload(encodedData: string): any {
   const normalized = encodedData.replace(/-/g, '+').replace(/_/g, '/');

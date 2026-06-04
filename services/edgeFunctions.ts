@@ -3,8 +3,9 @@
 
 import { supabase, isSupabaseConfigured } from './supabase';
 import type { PlatformAccount, PlatformCampaign, PlatformInsightsResponse } from './platformTypes';
+import { getPublicEnv } from './publicEnv';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_URL = getPublicEnv('VITE_SUPABASE_URL');
 
 // Helper para fazer chamadas autenticadas às Edge Functions
 export async function callEdgeFunction<T>(
