@@ -269,6 +269,7 @@ app.post('/api/workspace/ad-connections', async (req: Request, res: Response) =>
 const FACEBOOK_APP_ID = process.env.VITE_FACEBOOK_APP_ID;
 const FACEBOOK_APP_SECRET = process.env.FACEBOOK_APP_SECRET;
 const REDIRECT_URI = process.env.VITE_FACEBOOK_REDIRECT_URI;
+const WORKSPACE_OAUTH_BASE_URL = (process.env.NEXUS_API_URL || process.env.VITE_NEXUS_API_URL || process.env.VITE_APP_URL || '').replace(/\/+$/, '');
 
 // ==================== ROTA DE CALLBACK DO FACEBOOK ====================
 /**
@@ -1067,5 +1068,6 @@ if (process.env.NODE_ENV === 'production' && fs.existsSync(distPath)) {
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
   console.log(`📱 Frontend esperado em: ${process.env.VITE_APP_URL}`);
-  console.log(`🔗 URL de callback configurada: ${REDIRECT_URI}`);
+  console.log(`🔗 Callback workspace Meta: ${WORKSPACE_OAUTH_BASE_URL}/api/workspace/oauth/meta/callback`);
+  console.log(`🔗 Callback legado Facebook: ${REDIRECT_URI || 'nao configurado'}`);
 });

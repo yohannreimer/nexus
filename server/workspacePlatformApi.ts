@@ -116,9 +116,15 @@ export function mountWorkspacePlatformRoutes(
 
       const redirectUri = workspaceOAuthRedirectUri(req, platform);
       if (platform === 'meta') {
-        await completeMetaOAuth(parsedState.workspaceId, code, redirectUri);
+        const savedAccounts = await completeMetaOAuth(parsedState.workspaceId, code, redirectUri);
+        console.log(
+          `✅ OAuth workspace Meta salvo: workspace=${parsedState.workspaceId}, accounts=${savedAccounts.length}`,
+        );
       } else {
-        await completeGoogleOAuth(parsedState.workspaceId, code, redirectUri);
+        const savedAccounts = await completeGoogleOAuth(parsedState.workspaceId, code, redirectUri);
+        console.log(
+          `✅ OAuth workspace Google salvo: workspace=${parsedState.workspaceId}, accounts=${savedAccounts.length}`,
+        );
       }
 
       res.redirect(withStatusParam(returnUrl, platform, true));
@@ -198,7 +204,7 @@ function buildPlatformLoginUrl(platform: Platform, redirectUri: string, state: s
   return loginUrl.toString();
 }
 
-async function completeMetaOAuth(workspaceId: string, code: string, redirectUri: string) {
+async function completeMetaOAuth(workspaceId: string, code: string, redirectUri: string): Promise<PlatformAccountRow[]> {
   const shortLivedToken = await exchangeMetaCodeForToken(code, redirectUri);
   const longLived = await exchangeMetaLongLivedToken(shortLivedToken);
   const expiresIn = Number(longLived.expires_in || 5184000);
@@ -219,10 +225,10 @@ async function completeMetaOAuth(workspaceId: string, code: string, redirectUri:
     },
   });
 
-  await syncMetaAccounts(workspaceId, connectionId);
+  return syncMetaAccounts(workspaceId, connectionId);
 }
 
-async function completeGoogleOAuth(workspaceId: string, code: string, redirectUri: string) {
+async function completeGoogleOAuth(workspaceId: string, code: string, redirectUri: string): Promise<PlatformAccountRow[]> {
   const tokens = await exchangeGoogleCodeForTokens(code, redirectUri);
   const expiresAt = new Date(Date.now() + Number(tokens.expires_in || 3600) * 1000).toISOString();
   const existingConnection = await getWorkspaceConnection(workspaceId, 'google', false);
@@ -248,7 +254,7 @@ async function completeGoogleOAuth(workspaceId: string, code: string, redirectUr
     },
   });
 
-  await syncGoogleAccounts(workspaceId, connectionId);
+  return syncGoogleAccounts(workspaceId, connectionId);
 }
 
 async function syncMetaAccounts(workspaceId: string, connectionId?: string): Promise<PlatformAccountRow[]> {
