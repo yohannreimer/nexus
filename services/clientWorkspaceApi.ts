@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AdPlatform, PlatformAccount } from './platformTypes';
+import { callNexusApi } from './nexusApi';
+import { isPublicEnvEnabled } from './publicEnv';
 import type {
   AgencyAiBriefing,
   AgencyClient,
@@ -25,7 +27,7 @@ import { sanitizePortalPayload } from './portalModel';
 
 type DbClient = {
   id: string;
-  user_id: string;
+  user_id: string | null;
   name: string;
   status: AgencyClientStatus;
   primary_whatsapp: string | null;
@@ -221,7 +223,7 @@ export type PublicClientPortalData = {
 export function mapAgencyClient(row: DbClient): AgencyClient {
   return {
     id: row.id,
-    userId: row.user_id,
+    userId: row.user_id || '',
     name: row.name,
     status: row.status,
     primaryWhatsapp: row.primary_whatsapp,
@@ -461,6 +463,11 @@ export function buildClientSummaryHealth(
 }
 
 export async function listAgencyClients(): Promise<AgencyClient[]> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: DbClient[] }>('/api/workspace/agency-clients');
+    return result.data.map(mapAgencyClient);
+  }
+
   const client = await requireSupabase('listar clientes');
   const { data, error } = await client.from('agency_clients').select('*').order('name');
   if (error) throwSupabaseError('listar clientes', error);
@@ -555,6 +562,14 @@ export async function createAgencyClient(input: {
   notes?: string | null;
   metadata?: Record<string, unknown>;
 }): Promise<AgencyClient> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: DbClient }>('/api/workspace/agency-clients', {
+      method: 'POST',
+      body: input,
+    });
+    return mapAgencyClient(result.data);
+  }
+
   const client = await requireSupabase('criar cliente');
   const { data: authData, error: authError } = await client.auth.getUser();
   if (authError) throwSupabaseError('carregar usuário autenticado', authError);

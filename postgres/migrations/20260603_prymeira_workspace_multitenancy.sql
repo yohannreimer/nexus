@@ -36,9 +36,15 @@ alter table if exists public.agency_clients
   add column if not exists workspace_id uuid,
   add column if not exists clerk_user_id text;
 
+alter table if exists public.agency_clients
+  alter column user_id drop not null;
+
 alter table if exists public.agency_client_accounts
   add column if not exists workspace_id uuid,
   add column if not exists clerk_user_id text;
+
+alter table if exists public.agency_client_accounts
+  alter column user_id drop not null;
 
 alter table if exists public.client_report_settings
   add column if not exists workspace_id uuid,

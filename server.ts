@@ -146,6 +146,65 @@ app.get('/api/workspace/platform-accounts', async (req: Request, res: Response) 
   }
 });
 
+app.get('/api/workspace/agency-clients', async (req: Request, res: Response) => {
+  try {
+    const workspace = await requireWorkspace(req);
+    const clients = await queryPostgres(`
+      select id, user_id, name, status, primary_whatsapp, internal_owner, notes, metadata, created_at, updated_at
+      from public.agency_clients
+      where workspace_id = $1
+      order by name asc
+    `, [workspace.workspaceId]);
+
+    res.json({ data: clients });
+  } catch (error) {
+    respondNexusApiError(res, error);
+  }
+});
+
+app.post('/api/workspace/agency-clients', async (req: Request, res: Response) => {
+  try {
+    const workspace = await requireWorkspace(req);
+    const body = req.body as {
+      name?: unknown;
+      status?: unknown;
+      primaryWhatsapp?: unknown;
+      internalOwner?: unknown;
+      notes?: unknown;
+      metadata?: unknown;
+    };
+
+    if (typeof body.name !== 'string' || !body.name.trim()) {
+      res.status(400).json({ error: 'name é obrigatório' });
+      return;
+    }
+
+    const status = body.status === 'paused' || body.status === 'archived' ? body.status : 'active';
+    const rows = await queryPostgres(`
+      insert into public.agency_clients (
+        user_id, workspace_id, clerk_user_id, name, status,
+        primary_whatsapp, internal_owner, notes, metadata
+      )
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      returning id, user_id, name, status, primary_whatsapp, internal_owner, notes, metadata, created_at, updated_at
+    `, [
+      null,
+      workspace.workspaceId,
+      null,
+      body.name.trim(),
+      status,
+      typeof body.primaryWhatsapp === 'string' && body.primaryWhatsapp ? body.primaryWhatsapp : null,
+      typeof body.internalOwner === 'string' && body.internalOwner ? body.internalOwner : null,
+      typeof body.notes === 'string' && body.notes ? body.notes : null,
+      body.metadata && typeof body.metadata === 'object' && !Array.isArray(body.metadata) ? body.metadata : {},
+    ]);
+
+    res.status(201).json({ data: rows[0] });
+  } catch (error) {
+    respondNexusApiError(res, error);
+  }
+});
+
 app.post('/api/workspace/ad-connections', async (req: Request, res: Response) => {
   try {
     const workspace = await requireWorkspace(req);

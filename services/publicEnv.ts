@@ -30,7 +30,7 @@ export function getPublicEnv(key: PublicEnvKey): string {
     }
   }
 
-  return (import.meta.env[key] as string | undefined) || '';
+  return (((import.meta as unknown as { env?: Record<string, string | undefined> }).env?.[key]) as string | undefined) || '';
 }
 
 export function isPublicEnvEnabled(key: PublicEnvKey): boolean {
