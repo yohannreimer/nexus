@@ -1,0 +1,104 @@
+version: "3.7"
+
+services:
+  nexus_postgres:
+    image: postgres:16-alpine
+    networks:
+      - nexus_internal
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - nexus_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+          - node.hostname == manager01
+      restart_policy:
+        condition: on-failure
+
+  nexus_app:
+    image: ghcr.io/yohannreimer/nexus:latest
+    networks:
+      - network_swarm_public
+      - nexus_internal
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@nexus_postgres:5432/${POSTGRES_DB}
+
+      VITE_APP_URL: ${VITE_APP_URL}
+      VITE_NEXUS_API_URL: ${VITE_NEXUS_API_URL}
+      NEXUS_API_URL: ${NEXUS_API_URL}
+
+      VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
+      VITE_PRYMEIRA_ACCOUNT_API_URL: ${VITE_PRYMEIRA_ACCOUNT_API_URL}
+      VITE_PRYMEIRA_HUB_URL: ${VITE_PRYMEIRA_HUB_URL}
+      VITE_PRYMEIRA_PRODUCT_KEY: ${VITE_PRYMEIRA_PRODUCT_KEY}
+      VITE_PRYMEIRA_AUTH_ENABLED: ${VITE_PRYMEIRA_AUTH_ENABLED}
+      PRYMEIRA_ACCOUNT_API_URL: ${PRYMEIRA_ACCOUNT_API_URL}
+      PRYMEIRA_PRODUCT_KEY: ${PRYMEIRA_PRODUCT_KEY}
+
+      NEXUS_OAUTH_STATE_SECRET: ${NEXUS_OAUTH_STATE_SECRET}
+
+      VITE_FACEBOOK_APP_ID: ${VITE_FACEBOOK_APP_ID}
+      VITE_FACEBOOK_REDIRECT_URI: ${VITE_FACEBOOK_REDIRECT_URI}
+      FACEBOOK_APP_ID: ${FACEBOOK_APP_ID}
+      FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET}
+      FACEBOOK_GRAPH_VERSION: ${FACEBOOK_GRAPH_VERSION}
+
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_ADS_DEVELOPER_TOKEN: ${GOOGLE_ADS_DEVELOPER_TOKEN}
+      GOOGLE_ADS_LOGIN_CUSTOMER_ID: ${GOOGLE_ADS_LOGIN_CUSTOMER_ID}
+      GOOGLE_ADS_API_VERSION: ${GOOGLE_ADS_API_VERSION}
+
+      VITE_N8N_WEBHOOK_URL: ${VITE_N8N_WEBHOOK_URL}
+      VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+      VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+      VITE_DEV_BYPASS: ${VITE_DEV_BYPASS}
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3001/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+          - node.hostname == manager01
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 1G
+      restart_policy:
+        condition: on-failure
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=network_swarm_public
+        - traefik.http.routers.nexus.rule=Host(`nexus.yrdnegocios.com.br`)
+        - traefik.http.routers.nexus.entrypoints=websecure
+        - traefik.http.routers.nexus.tls.certresolver=letsencryptresolver
+        - traefik.http.routers.nexus.service=nexus
+        - traefik.http.services.nexus.loadbalancer.server.port=3001
+
+volumes:
+  nexus_postgres_data:
+    name: nexus_postgres_data
+
+networks:
+  network_swarm_public:
+    external: true
+  nexus_internal:
+    driver: overlay
