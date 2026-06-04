@@ -29,7 +29,7 @@ services:
   nexus_app:
     # Portainer/Swarm may reuse :latest on stack updates. Pin an immutable
     # GHCR commit tag here to force a real service update when this changes.
-    image: ghcr.io/yohannreimer/nexus:7df37aabf143e2ec055df8761a79f43eff29597c
+    image: ghcr.io/yohannreimer/nexus:ae00f4cf4f28fdf45688c0f82cd07a09a2f9c37f
     networks:
       - network_swarm_public
       - nexus_internal

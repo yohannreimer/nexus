@@ -2,7 +2,7 @@
 
 Este projeto publica uma imagem Docker generica pelo GitHub Actions. Todas as variaveis ficam no Portainer.
 
-O stack do Portainer usa uma tag imutavel de commit, por exemplo `ghcr.io/yohannreimer/nexus:7df37aabf143e2ec055df8761a79f43eff29597c`, em vez de `latest`. Isso evita o problema do Swarm/Portainer reaproveitar a imagem antiga quando voce clica em **Update the stack**.
+O stack do Portainer usa uma tag imutavel de commit, por exemplo `ghcr.io/yohannreimer/nexus:ae00f4cf4f28fdf45688c0f82cd07a09a2f9c37f`, em vez de `latest`. Isso evita o problema do Swarm/Portainer reaproveitar a imagem antiga quando voce clica em **Update the stack**.
 
 ## 1. GitHub Actions
 
