@@ -13,9 +13,92 @@ if (!databaseUrl) {
 
 const migrationsDir = path.join(process.cwd(), 'postgres', 'migrations');
 const client = new Client({ connectionString: databaseUrl });
+const maxConnectAttempts = Number.parseInt(
+  process.env.POSTGRES_MIGRATION_CONNECT_ATTEMPTS ?? '30',
+  10,
+);
+const connectRetryDelayMs = Number.parseInt(
+  process.env.POSTGRES_MIGRATION_RETRY_DELAY_MS ?? '2000',
+  10,
+);
+
+const requiredBaseSchemaTables = [
+  'public.ad_connections',
+  'public.ad_platform_accounts',
+  'public.ad_platform_campaigns',
+  'public.ad_insights_snapshots',
+  'public.agency_clients',
+  'public.agency_client_accounts',
+  'public.client_report_settings',
+  'public.client_report_runs',
+  'public.client_portals',
+  'public.client_ai_profiles',
+  'public.client_ai_analyses',
+  'public.agency_ai_briefings',
+];
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function connectWithRetry() {
+  let lastError;
+
+  for (let attempt = 1; attempt <= maxConnectAttempts; attempt += 1) {
+    try {
+      await client.connect();
+      if (attempt > 1) {
+        console.log(`connected to Postgres after ${attempt} attempts`);
+      }
+      return;
+    } catch (error) {
+      lastError = error;
+      console.warn(
+        `Postgres unavailable for migrations (${attempt}/${maxConnectAttempts}): ${error.message}`,
+      );
+      if (attempt < maxConnectAttempts) {
+        await sleep(connectRetryDelayMs);
+      }
+    }
+  }
+
+  throw lastError;
+}
+
+async function findMissingRequiredTables() {
+  const result = await client.query(
+    `
+      select table_name
+      from unnest($1::text[]) as required(table_name)
+      where to_regclass(required.table_name) is null
+      order by table_name
+    `,
+    [requiredBaseSchemaTables],
+  );
+
+  return result.rows.map((row) => row.table_name);
+}
+
+async function applySqlFile(file) {
+  const sql = await fs.readFile(path.join(migrationsDir, file), 'utf8');
+  await client.query('begin');
+  try {
+    await client.query(sql);
+    await client.query(
+      `
+        insert into public.schema_migrations (filename)
+        values ($1)
+        on conflict (filename) do update set applied_at = now()
+      `,
+      [file],
+    );
+    await client.query('commit');
+  } catch (error) {
+    await client.query('rollback');
+    throw error;
+  }
+}
 
 try {
-  await client.connect();
+  await connectWithRetry();
   await client.query(`
     create table if not exists public.schema_migrations (
       filename text primary key,
@@ -38,20 +121,24 @@ try {
       continue;
     }
 
-    const sql = await fs.readFile(path.join(migrationsDir, file), 'utf8');
     console.log(`apply ${file}`);
-    await client.query('begin');
-    try {
-      await client.query(sql);
-      await client.query(
-        'insert into public.schema_migrations (filename) values ($1)',
-        [file],
-      );
-      await client.query('commit');
-    } catch (error) {
-      await client.query('rollback');
-      throw error;
-    }
+    await applySqlFile(file);
+  }
+
+  const missingRequiredTables = await findMissingRequiredTables();
+  if (missingRequiredTables.length) {
+    console.warn(
+      `required workspace tables missing after migrations: ${missingRequiredTables.join(', ')}`,
+    );
+    console.log('repair 20260605_workspace_base_schema.sql');
+    await applySqlFile('20260605_workspace_base_schema.sql');
+  }
+
+  const stillMissingRequiredTables = await findMissingRequiredTables();
+  if (stillMissingRequiredTables.length) {
+    throw new Error(
+      `required workspace tables still missing: ${stillMissingRequiredTables.join(', ')}`,
+    );
   }
 
   console.log('migrations ok');
