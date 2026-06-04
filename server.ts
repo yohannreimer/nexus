@@ -112,6 +112,7 @@ async function upsertWorkspaceConnection(input: {
 }
 
 // Middleware
+app.set('trust proxy', true);
 app.use(cors({
   origin: process.env.VITE_APP_URL || 'http://localhost:5173',
   credentials: true
