@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AdPlatform, PlatformAccount } from './platformTypes';
 import { callNexusApi } from './nexusApi';
-import { isPublicEnvEnabled } from './publicEnv';
+import { getPublicEnv, isPublicEnvEnabled } from './publicEnv';
 import type {
   AgencyAiBriefing,
   AgencyClient,
@@ -476,6 +476,11 @@ export async function listAgencyClients(): Promise<AgencyClient[]> {
 }
 
 export async function listWorkspacePlatformAccounts(): Promise<PlatformAccount[]> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: DbPlatformAccount[] }>('/api/workspace/platform-accounts');
+    return result.data.map(mapPlatformAccount);
+  }
+
   const client = await requireSupabase('listar contas de anúncio');
   const { data, error } = await client
     .from('ad_platform_accounts')
@@ -594,6 +599,11 @@ export async function createAgencyClient(input: {
 }
 
 export async function listClientAccountLinks(): Promise<AgencyClientAccountLink[]> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: Array<DbLink & { account?: DbPlatformAccount | null }> }>('/api/workspace/client-account-links');
+    return result.data.map((row) => mapClientAccountLink(row, row.account ? mapPlatformAccount(row.account) : undefined));
+  }
+
   const client = await requireSupabase('listar vínculos de contas');
   const { data, error } = await client
     .from('agency_client_accounts')
@@ -620,6 +630,11 @@ export async function listClientAccountLinks(): Promise<AgencyClientAccountLink[
 }
 
 export async function listClientReportSettings(): Promise<ClientReportSettings[]> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: DbSettings[] }>('/api/workspace/client-report-settings');
+    return result.data.map(mapClientReportSettings);
+  }
+
   const client = await requireSupabase('listar configurações de relatórios');
   const { data, error } = await client
     .from('client_report_settings')
@@ -634,6 +649,14 @@ export async function upsertClientReportSettings(
   clientId: string,
   input: ClientReportSettingsInput,
 ): Promise<ClientReportSettings> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: DbSettings }>(`/api/workspace/client-report-settings/${clientId}`, {
+      method: 'PUT',
+      body: input,
+    });
+    return mapClientReportSettings(result.data);
+  }
+
   const client = await requireSupabase('salvar automação do cliente');
   const { data: authData, error: authError } = await client.auth.getUser();
   if (authError) throwSupabaseError('carregar usuário autenticado', authError);
@@ -687,6 +710,14 @@ export async function linkAccountToClient(
   clientId: string,
   account: PlatformAccount,
 ): Promise<AgencyClientAccountLink> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: DbLink & { account?: DbPlatformAccount | null } }>('/api/workspace/client-account-links', {
+      method: 'POST',
+      body: { clientId, accountId: account.id, platform: account.platform },
+    });
+    return mapClientAccountLink(result.data, result.data.account ? mapPlatformAccount(result.data.account) : account);
+  }
+
   const client = await requireSupabase('vincular conta ao cliente');
   const { data: authData, error: authError } = await client.auth.getUser();
   if (authError) throwSupabaseError('carregar usuário autenticado', authError);
@@ -715,6 +746,11 @@ export async function linkAccountToClient(
 }
 
 export async function unlinkAccountFromClient(linkId: string): Promise<void> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    await callNexusApi(`/api/workspace/client-account-links/${linkId}/unlink`, { method: 'PATCH' });
+    return;
+  }
+
   const client = await requireSupabase('desvincular conta do cliente');
   const { error } = await client
     .from('agency_client_accounts')
@@ -724,6 +760,11 @@ export async function unlinkAccountFromClient(linkId: string): Promise<void> {
 }
 
 export async function listClientReportRuns(): Promise<ClientReportRun[]> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: DbReportRun[] }>('/api/workspace/client-report-runs');
+    return result.data.map(mapClientReportRun);
+  }
+
   const client = await requireSupabase('listar execuções de relatórios');
   const { data, error } = await client
     .from('client_report_runs')
@@ -735,6 +776,11 @@ export async function listClientReportRuns(): Promise<ClientReportRun[]> {
 }
 
 export async function listClientDailySnapshots(days = 15): Promise<ClientDailySnapshot[]> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: ClientDailySnapshot[] }>(`/api/workspace/client-daily-snapshots?days=${days}`);
+    return result.data;
+  }
+
   const client = await requireSupabase('listar memória diária dos clientes');
   const since = toIsoDate(addDays(new Date(), -(Math.max(1, days) - 1)));
 
@@ -768,6 +814,11 @@ export async function listClientDailySnapshots(days = 15): Promise<ClientDailySn
 }
 
 export async function listReportRunsForClient(clientId: string): Promise<ClientReportRun[]> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: DbReportRun[] }>(`/api/workspace/client-report-runs?client_id=${clientId}`);
+    return result.data.map(mapClientReportRun);
+  }
+
   const client = await requireSupabase('listar execuções de relatórios do cliente');
   const { data, error } = await client
     .from('client_report_runs')
@@ -780,6 +831,11 @@ export async function listReportRunsForClient(clientId: string): Promise<ClientR
 }
 
 export async function listRecentReportRuns(limit = 50): Promise<ClientReportRun[]> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: DbReportRun[] }>(`/api/workspace/client-report-runs?limit=${limit}`);
+    return result.data.map(mapClientReportRun);
+  }
+
   const client = await requireSupabase('listar execuções recentes de relatórios');
   const { data, error } = await client
     .from('client_report_runs')
@@ -792,6 +848,13 @@ export async function listRecentReportRuns(limit = 50): Promise<ClientReportRun[
 }
 
 export async function markReportRunForRetry(runId: string): Promise<ClientReportRun> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: DbReportRun }>(`/api/workspace/client-report-runs/${runId}/retry`, {
+      method: 'PATCH',
+    });
+    return mapClientReportRun(result.data);
+  }
+
   const client = await requireSupabase('marcar relatório para reenvio');
   const { data, error } = await client
     .from('client_report_runs')
@@ -811,6 +874,11 @@ export async function markReportRunForRetry(runId: string): Promise<ClientReport
 }
 
 export async function listClientPortals(): Promise<ClientPortal[]> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: DbClientPortal[] }>('/api/workspace/client-portals');
+    return result.data.map(mapClientPortal);
+  }
+
   const client = await requireSupabase('listar portais de clientes');
   const { data, error } = await client
     .from('client_portals')
@@ -824,6 +892,14 @@ export async function listClientPortals(): Promise<ClientPortal[]> {
 export async function upsertClientPortal(
   input: Partial<ClientPortal> & { clientId: string; slug: string },
 ): Promise<ClientPortal> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: DbClientPortal }>(`/api/workspace/client-portals/${input.clientId}`, {
+      method: 'PUT',
+      body: input,
+    });
+    return mapClientPortal(result.data);
+  }
+
   const client = await requireSupabase('salvar portal do cliente');
   const userId = await requireAuthenticatedUserId(client, 'carregar usuário autenticado');
   const payload: Record<string, unknown> = {
@@ -850,6 +926,11 @@ export async function upsertClientPortal(
 }
 
 export async function getClientPortalBySlug(slug: string): Promise<ClientPortal | null> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const portals = await listClientPortals();
+    return portals.find((portal) => portal.slug === slug) || null;
+  }
+
   const client = await requireSupabase('carregar portal do cliente');
   const { data, error } = await client
     .from('client_portals')
@@ -862,6 +943,14 @@ export async function getClientPortalBySlug(slug: string): Promise<ClientPortal 
 }
 
 export async function getPublicPortalBySlug(slug: string): Promise<PublicClientPortalData | null> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const apiBaseUrl = getPublicEnv('VITE_NEXUS_API_URL') || window.location.origin;
+    const response = await fetch(`${apiBaseUrl}/api/public/client-portals/${encodeURIComponent(slug)}`);
+    const result = await response.json().catch(() => null) as { data?: PublicClientPortalData | null; error?: string } | null;
+    if (!response.ok) throw new Error(result?.error || 'Erro ao carregar portal público');
+    return result?.data || null;
+  }
+
   const client = await requireSupabase('carregar portal público do cliente');
   const { data, error } = await client.rpc('get_public_client_portal', { portal_slug: slug });
   if (error) throwSupabaseError('carregar portal público do cliente', error);
@@ -889,6 +978,11 @@ export async function getPublicPortalBySlug(slug: string): Promise<PublicClientP
 }
 
 export async function listClientAiProfiles(): Promise<ClientAiProfile[]> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: DbClientAiProfile[] }>('/api/workspace/client-ai-profiles');
+    return result.data.map(mapClientAiProfile);
+  }
+
   const client = await requireSupabase('listar perfis de IA dos clientes');
   const { data, error } = await client
     .from('client_ai_profiles')
@@ -900,6 +994,11 @@ export async function listClientAiProfiles(): Promise<ClientAiProfile[]> {
 }
 
 export async function getClientAiProfile(clientId: string): Promise<ClientAiProfile | null> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: DbClientAiProfile | null }>(`/api/workspace/client-ai-profiles?client_id=${clientId}`);
+    return result.data ? mapClientAiProfile(result.data) : null;
+  }
+
   const client = await requireSupabase('carregar perfil de IA do cliente');
   const { data, error } = await client
     .from('client_ai_profiles')
@@ -914,6 +1013,14 @@ export async function getClientAiProfile(clientId: string): Promise<ClientAiProf
 export async function upsertClientAiProfile(
   input: Partial<ClientAiProfile> & { clientId: string },
 ): Promise<ClientAiProfile> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: DbClientAiProfile }>(`/api/workspace/client-ai-profiles/${input.clientId}`, {
+      method: 'PUT',
+      body: input,
+    });
+    return mapClientAiProfile(result.data);
+  }
+
   const client = await requireSupabase('salvar perfil de IA do cliente');
   const userId = await requireAuthenticatedUserId(client, 'carregar usuário autenticado');
   const payload: Record<string, unknown> = {
@@ -941,6 +1048,11 @@ export async function upsertClientAiProfile(
 }
 
 export async function listClientAiAnalyses(clientId: string): Promise<ClientAiAnalysis[]> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: DbClientAiAnalysis[] }>(`/api/workspace/client-ai-analyses?client_id=${clientId}`);
+    return result.data.map(mapClientAiAnalysis);
+  }
+
   const client = await requireSupabase('listar análises de IA do cliente');
   const { data, error } = await client
     .from('client_ai_analyses')
@@ -953,6 +1065,14 @@ export async function listClientAiAnalyses(clientId: string): Promise<ClientAiAn
 }
 
 export async function createClientAiAnalysis(input: ClientAiAnalysisInput): Promise<ClientAiAnalysis> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: DbClientAiAnalysis }>('/api/workspace/client-ai-analyses', {
+      method: 'POST',
+      body: input,
+    });
+    return mapClientAiAnalysis(result.data);
+  }
+
   const client = await requireSupabase('criar análise de IA do cliente');
   const userId = await requireAuthenticatedUserId(client, 'carregar usuário autenticado');
   const { data, error } = await client
@@ -983,6 +1103,11 @@ export async function createClientAiAnalysis(input: ClientAiAnalysisInput): Prom
 }
 
 export async function listAgencyAiBriefings(): Promise<AgencyAiBriefing[]> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: DbAgencyAiBriefing[] }>('/api/workspace/agency-ai-briefings');
+    return result.data.map(mapAgencyAiBriefing);
+  }
+
   const client = await requireSupabase('listar briefings de IA da agência');
   const { data, error } = await client
     .from('agency_ai_briefings')
@@ -994,6 +1119,14 @@ export async function listAgencyAiBriefings(): Promise<AgencyAiBriefing[]> {
 }
 
 export async function upsertAgencyAiBriefing(input: AgencyAiBriefingInput): Promise<AgencyAiBriefing> {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const result = await callNexusApi<{ data: DbAgencyAiBriefing }>(`/api/workspace/agency-ai-briefings/${input.briefingDate}`, {
+      method: 'PUT',
+      body: input,
+    });
+    return mapAgencyAiBriefing(result.data);
+  }
+
   const client = await requireSupabase('salvar briefing de IA da agência');
   const userId = await requireAuthenticatedUserId(client, 'carregar usuário autenticado');
   const { data, error } = await client

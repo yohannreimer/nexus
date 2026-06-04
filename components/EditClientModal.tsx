@@ -6,9 +6,9 @@ import {
 } from '@phosphor-icons/react';
 import { AdAccount } from '../types';
 import { Button } from './Button';
-import { fetchCampaigns } from '../services/api';
+import { fetchCampaigns, fetchInsights, sendWebhook } from '../services/api';
 import { DEFAULT_TEMPLATES, processTemplate, getAllTemplates, saveCustomTemplate, saveClientTemplate, getClientTemplate, MessageTemplate } from '../services/messageTemplates';
-import { saveClient, isSupabaseConfigured } from '../services/supabase';
+import { isPublicEnvEnabled } from '../services/publicEnv';
 
 interface Campaign { id: string; name: string; status: string; objective?: string; }
 interface EditClientModalProps { account: AdAccount | null; isOpen: boolean; onClose: () => void; onSave: (config: any) => void; }
@@ -70,6 +70,7 @@ export const EditClientModal: React.FC<EditClientModalProps> = ({ account, isOpe
   const loadAccountConfig = async () => {
     if (!account) return;
     try {
+      if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) return;
       const { getClientByAdAccount, isSupabaseConfigured } = await import('../services/supabase');
       if (isSupabaseConfigured()) {
         const client = await getClientByAdAccount(account.id);
@@ -101,8 +102,11 @@ export const EditClientModal: React.FC<EditClientModalProps> = ({ account, isOpe
   const handleSave = async () => {
     if (!account || !whatsapp) { alert('Por favor, preencha o WhatsApp'); return; }
     setLoading(true);
-    if (isSupabaseConfigured()) {
+    if (!isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+      const { saveClient, isSupabaseConfigured } = await import('../services/supabase');
+      if (isSupabaseConfigured()) {
       await saveClient({ name: account.name, ad_account_id: account.id, whatsapp_number: whatsapp, report_time: sendTime, template_id: selectedTemplateId, is_automated: isAutomated, selected_campaign_ids: Array.from(selectedCampaigns) });
+      }
     }
     saveClientTemplate(account.id, selectedTemplateId);
     await onSave({ whatsappNumber: whatsapp, sendTime, selectedCampaigns: Array.from(selectedCampaigns), templateId: selectedTemplateId, customTemplate });
@@ -113,9 +117,6 @@ export const EditClientModal: React.FC<EditClientModalProps> = ({ account, isOpe
     if (!account) return;
     setLoadingPreviewMessage(true); setPreviewMessage('Carregando dados reais...');
     try {
-      const { fetchInsights } = await import('../services/edgeFunctions');
-      const { isSupabaseConfigured } = await import('../services/supabase');
-      if (!isSupabaseConfigured()) { setPreviewMessage('⚠️ Supabase não configurado'); setLoadingPreviewMessage(false); return; }
       const presetMap: Record<string, string> = { today: 'today', yesterday: 'yesterday', last7days: 'last_7d', last30days: 'last_30d' };
       const params = reportPeriod === 'custom' ? { dateStart: customStartDate, dateEnd: customEndDate } : { datePreset: presetMap[reportPeriod] || 'yesterday' };
       const insights = await fetchInsights(account.id, params);
@@ -143,9 +144,6 @@ export const EditClientModal: React.FC<EditClientModalProps> = ({ account, isOpe
   const handleSendCustomReport = async () => {
     if (!account) return; setSendingCustom(true);
     try {
-      const { sendWebhook } = await import('../services/edgeFunctions');
-      const { isSupabaseConfigured } = await import('../services/supabase');
-      if (!isSupabaseConfigured()) throw new Error('Configure a conexão com o Supabase primeiro');
       if (!previewMessage || previewMessage.includes('Carregando') || previewMessage.includes('⚠️')) throw new Error('Aguarde o carregamento dos dados');
       await sendWebhook({ whatsappNumber: whatsapp, reportContent: previewMessage, clientName: account.name, adAccountId: account.id, adAccountName: account.name });
       alert('✅ Relatório enviado com sucesso!');
@@ -156,9 +154,6 @@ export const EditClientModal: React.FC<EditClientModalProps> = ({ account, isOpe
   const handleLoadPreview = async () => {
     if (!account) return; setLoadingPreview(true);
     try {
-      const { fetchInsights } = await import('../services/edgeFunctions');
-      const { isSupabaseConfigured } = await import('../services/supabase');
-      if (!isSupabaseConfigured()) throw new Error('Configure Supabase primeiro');
       const insights = await fetchInsights(account.id, { datePreset: 'yesterday' });
       setPreviewHtml(`<div style="padding:20px;font-family:system-ui"><h2>Relatório ${account?.name}</h2><p><b>Período:</b> Ontem</p><hr/><p><b>Gasto:</b> R$ ${insights.totals.spend.toFixed(2)}</p><p><b>Impressões:</b> ${insights.totals.impressions.toLocaleString()}</p><p><b>Cliques:</b> ${insights.totals.clicks}</p><p><b>CTR:</b> ${insights.totals.ctr.toFixed(2)}%</p><p><b>CPC:</b> R$ ${insights.totals.cpc.toFixed(2)}</p></div>`);
     } catch (e: any) { setPreviewHtml(`<div style="padding:40px;text-align:center;color:#ef4444;font-family:system-ui"><h3>Erro ao Gerar Preview</h3><p>${e.message}</p></div>`); }

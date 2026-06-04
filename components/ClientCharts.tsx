@@ -114,8 +114,6 @@ export const ClientCharts: React.FC<ClientChartsProps> = ({
       }
 
       const { fetchPlatformInsights } = await import('../services/platformApi');
-      const { isSupabaseConfigured } = await import('../services/supabase');
-      if (!isSupabaseConfigured()) { setError('Supabase não configurado.'); setLoading(false); return; }
 
       const datePresetMap: Record<string, string> = { today: 'today', yesterday: 'yesterday', last7days: 'last_7d', last30days: 'last_30d', last60days: 'last_60d' };
       const selectedAccounts = accounts?.length ? accounts : [client];

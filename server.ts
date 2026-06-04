@@ -13,6 +13,7 @@ import { ReportGeneratorService } from './services/reportGeneratorService';
 import { resolvePrymeiraWorkspaceFromAuthorization, type ServerWorkspaceContext } from './server/prymeiraAccess';
 import { queryPostgres } from './server/postgres';
 import { mountWorkspacePlatformRoutes } from './server/workspacePlatformApi';
+import { mountWorkspaceDataRoutes } from './server/workspaceDataApi';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -120,6 +121,7 @@ app.use(cors({
 app.use(express.json());
 
 mountWorkspacePlatformRoutes(app, { requireWorkspace, respondNexusApiError });
+mountWorkspaceDataRoutes(app, { requireWorkspace, respondNexusApiError });
 
 app.get('/api/workspace/me', async (req: Request, res: Response) => {
   try {

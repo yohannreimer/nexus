@@ -1,7 +1,7 @@
 import { AdAccount, FacebookCampaign } from '../types';
 import { isSupabaseConfigured, supabase } from './supabase';
 import * as edgeFunctions from './edgeFunctions';
-import { getPublicEnv } from './publicEnv';
+import { getPublicEnv, isPublicEnvEnabled } from './publicEnv';
 
 // CONFIGURAÇÃO
 const FB_APP_ID = getPublicEnv('VITE_FACEBOOK_APP_ID') || 'SEU_APP_ID_AQUI';
@@ -100,6 +100,17 @@ export const fetchAllAdAccounts = async (): Promise<AdAccount[]> => {
 
 export const fetchCampaigns = async (adAccountId: string): Promise<FacebookCampaign[]> => {
     console.log(`[API] Buscando campanhas da conta ${adAccountId}...`);
+
+    if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+      const { fetchPlatformCampaigns } = await import('./platformApi');
+      const campaigns = await fetchPlatformCampaigns('meta', adAccountId);
+      return campaigns.map((campaign) => ({
+        id: campaign.externalCampaignId || campaign.id,
+        name: campaign.name,
+        status: campaign.status,
+        objective: campaign.objective || campaign.channelType || undefined,
+      }));
+    }
     
     // Se Supabase está configurado, usar Edge Functions
     if (isSupabaseConfigured()) {
@@ -123,15 +134,19 @@ export const fetchCampaigns = async (adAccountId: string): Promise<FacebookCampa
       }
     }
     
-    // Se Supabase não está configurado, retorna erro
-    console.error('❌ Supabase não configurado para buscar campanhas');
+    // Fallback legado sem backend configurado.
+    console.error('❌ Backend de campanhas não configurado');
     return [
-      { id: 'error_1', name: '[ERRO] Supabase não configurado', status: 'PAUSED', objective: 'Configure as variáveis de ambiente' }
+      { id: 'error_1', name: '[ERRO] Backend de campanhas não configurado', status: 'PAUSED', objective: 'Verifique as variáveis de ambiente' }
     ];
 }
 
 export const saveAccountConfig = async (accountId: string, whatsapp: string, campaignIds: string[]): Promise<boolean> => {
     console.log(`[API] Salvando config da conta ${accountId}...`, { whatsapp, campaignIds });
+
+    if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+      return true;
+    }
     
     // Se Supabase está configurado, salvar no banco
     if (isSupabaseConfigured() && supabase) {
@@ -175,6 +190,11 @@ export const fetchInsights = async (
     dateEnd?: string;
   } = {}
 ) => {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const { fetchPlatformInsights } = await import('./platformApi');
+    return fetchPlatformInsights('meta', accountId, options);
+  }
+
   if (isSupabaseConfigured()) {
     return edgeFunctions.fetchInsights(accountId, options);
   }
@@ -192,11 +212,24 @@ export const sendWebhook = async (params: {
   adAccountId?: string;
   adAccountName?: string;
 }) => {
+  if (isPublicEnvEnabled('VITE_PRYMEIRA_AUTH_ENABLED')) {
+    const webhookUrl = params.webhookUrl || getPublicEnv('VITE_N8N_WEBHOOK_URL');
+    if (!webhookUrl) throw new Error('Webhook não configurado');
+
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    });
+    if (!response.ok) throw new Error(`Webhook retornou status ${response.status}`);
+    return response.json().catch(() => ({ ok: true }));
+  }
+
   if (isSupabaseConfigured()) {
     return edgeFunctions.sendWebhook(params);
   }
   
-  throw new Error('Webhooks requerem conexão com Supabase');
+  throw new Error('Webhook não configurado');
 };
 
 export {

@@ -116,8 +116,6 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
       }
 
       const { fetchPlatformInsights } = await import('../services/platformApi');
-      const { isSupabaseConfigured } = await import('../services/supabase');
-      if (!isSupabaseConfigured()) throw new Error('Configure a conexão com o Supabase primeiro');
 
       const params = period === 'custom'
         ? { dateStart: customStartDate, dateEnd: customEndDate }
@@ -199,9 +197,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
     if (!whatsappNumber || !report) return;
     setSendingWhatsApp(true);
     try {
-      const { sendWebhook } = await import('../services/edgeFunctions');
-      const { isSupabaseConfigured } = await import('../services/supabase');
-      if (!isSupabaseConfigured()) throw new Error('Configure a conexão com o Supabase primeiro');
+      const { sendWebhook } = await import('../services/api');
       await sendWebhook({ whatsappNumber, reportContent: report.whatsappMessage, clientName: client.companyName, adAccountId: client.adAccountId, adAccountName: client.companyName });
       alert('✅ Relatório enviado com sucesso!');
     } catch (err: any) { alert('❌ Erro ao enviar: ' + err.message); }
@@ -212,7 +208,7 @@ export const ReportPreview: React.FC<ReportPreviewProps> = ({
     if (!report) return;
 
     try {
-      const { getAgencyConfig } = await import('../services/supabase');
+      const { getAgencyConfig } = await import('../services/agencyConfig');
       const agencyConfig = await getAgencyConfig();
 
       await PDFGeneratorService.downloadPDF({

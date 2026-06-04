@@ -35,6 +35,7 @@ const requiredBaseSchemaTables = [
   'public.client_ai_profiles',
   'public.client_ai_analyses',
   'public.agency_ai_briefings',
+  'public.agency_settings',
 ];
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -130,8 +131,10 @@ try {
     console.warn(
       `required workspace tables missing after migrations: ${missingRequiredTables.join(', ')}`,
     );
-    console.log('repair 20260605_workspace_base_schema.sql');
-    await applySqlFile('20260605_workspace_base_schema.sql');
+    for (const file of files) {
+      console.log(`repair ${file}`);
+      await applySqlFile(file);
+    }
   }
 
   const stillMissingRequiredTables = await findMissingRequiredTables();

@@ -4,27 +4,19 @@ import {
   Check, X, Image as ImageIcon, Globe, Mail, Phone, Loader2
 } from 'lucide-react';
 import { Button } from './Button';
-import { saveAgencyConfig, getAgencyConfig, AgencyConfig } from '../services/supabase';
+import {
+  saveAgencyConfig,
+  getAgencyConfig,
+  defaultAgencyConfig,
+  type AgencyConfig,
+} from '../services/agencyConfig';
 
 interface AgencySettingsProps {
   onBack: () => void;
 }
 
 export const AgencySettings: React.FC<AgencySettingsProps> = ({ onBack }) => {
-  const [config, setConfig] = useState<AgencyConfig>({
-    name: '',
-    logo: '',
-    primaryColor: '#6366f1',
-    secondaryColor: '#8b5cf6',
-    email: '',
-    phone: '',
-    website: '',
-    address: '',
-    cnpj: '',
-    defaultSendTime: '08:00',
-    webhookUrl: '',
-    reportFooter: 'Relatório gerado automaticamente por {{agency_name}}'
-  });
+  const [config, setConfig] = useState<AgencyConfig>(defaultAgencyConfig);
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
