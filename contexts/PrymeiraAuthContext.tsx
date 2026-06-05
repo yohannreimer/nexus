@@ -35,17 +35,19 @@ const accountApiUrl = getPublicEnv('VITE_PRYMEIRA_ACCOUNT_API_URL');
 const hubUrl = getPublicEnv('VITE_PRYMEIRA_HUB_URL') || 'https://app.prymeiradigital.com.br';
 const productKey = getPublicEnv('VITE_PRYMEIRA_PRODUCT_KEY') || 'ads';
 
-function isPublicPortalPath() {
+function isPublicPath() {
   if (typeof window === 'undefined') {
     return false;
   }
 
-  const parts = window.location.pathname.split('/').filter(Boolean);
+  const { pathname } = window.location;
+  if (pathname === '/landing') return true;
+  const parts = pathname.split('/').filter(Boolean);
   return parts[0] === 'portal' && Boolean(parts[1]);
 }
 
 export function PrymeiraAuthProvider({ children }: { children: ReactNode }) {
-  if (isPublicPortalPath()) {
+  if (isPublicPath()) {
     return <>{children}</>;
   }
 

@@ -12,6 +12,7 @@ import { IntegrationsView } from './components/IntegrationsView';
 import { ReportsHistoryView } from './components/ReportsHistoryView';
 import { ClientPortalPublicView } from './components/ClientPortalPublicView';
 import { AgencyIntelligenceCenter } from './components/AgencyIntelligenceCenter';
+import { NexusLandingPage } from './components/NexusLandingPage';
 import { usePrymeiraAuth } from './contexts/PrymeiraAuthContext';
 import {
   AdAccount,
@@ -909,6 +910,10 @@ const AppContent: React.FC = () => {
 
 // Componente principal
 const App: React.FC = () => {
+  if (window.location.pathname === '/landing') {
+    return <NexusLandingPage />;
+  }
+
   const publicPortalRoute = readPublicPortalRoute();
   if (publicPortalRoute) {
     return <ClientPortalPublicView slug={publicPortalRoute.slug} reportDate={publicPortalRoute.reportDate} />;
